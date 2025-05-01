@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>Python打包命令生成器</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --background: #f5f6fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui;
+            margin: 2rem;
+            background: var(--background);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .tab.active {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 2rem;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .config-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .command-box {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 6px;
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            padding: 0.3rem 0.8rem;
+            background: var(--secondary-color);
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .copy-btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('nuitka')">Nuitka</div>
+            <div class="tab" onclick="switchTab('pyinstaller')">PyInstaller</div>
+        </div>
+
+        <!-- Nuitka Tab -->
+        <div id="nuitka" class="tab-content active">
+            <div class="config-group">
+                <label>主程序路径</label>
+                <input type="text" id="n-main-file" oninput="generateNuitkaCommand()">
+            </div>
+            <div class="config-group">
+                <label>
+                    <input type="checkbox" id="n-windowed" onchange="generateNuitkaCommand()">
+                    禁用控制台窗口
+                </label>
+            </div>
+            <div class="command-box">
+                <code id="nuitka-command">nuitka --standalone --onefile </code>
+                <button class="copy-btn" onclick="copyCommand('nuitka-command')">复制</button>
+            </div>
+        </div>
+
+        <!-- PyInstaller Tab -->
+        <div id="pyinstaller" class="tab-content">
+            <div class="config-group">
+                <label>主程序路径</label>
+                <input type="text" id="p-main-file" oninput="generatePyinstallerCommand()">
+            </div>
+            <div class="config-group">
+                <label>图标文件(.ico)</label>
+                <input type="text" id="p-icon" oninput="generatePyinstallerCommand()">
+            </div>
+            <div class="command-box">
+                <code id="pyinstaller-command">pyinstaller --onefile </code>
+                <button class="copy-btn" onclick="copyCommand('pyinstaller-command')">复制</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        function generateNuitkaCommand() {
+            const mainFile = document.getElementById('n-main-file').value;
+            const windowed = document.getElementById('n-windowed').checked;
+
+            let command = 'nuitka --standalone --onefile';
+            if (windowed) command += ' --disable-console';
+            if (mainFile) command += ` "${mainFile}"`;
+
+            document.getElementById('nuitka-command').textContent = command;
+        }
+
+        function generatePyinstallerCommand() {
+            const mainFile = document.getElementById('p-main-file').value;
+            const icon = document.getElementById('p-icon').value;
+
+            let command = 'pyinstaller --onefile --clean';
+            if (icon) command += ` --icon="${icon}"`;
+            if (mainFile) command += ` "${mainFile}"`;
+
+            document.getElementById('pyinstaller-command').textContent = command;
+        }
+
+        function copyCommand(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('命令已复制到剪贴板！');
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+pyperclip>=1.8
+pyinstaller>=5.0
+nuitka>=1.5
+kivy>=2.1.0

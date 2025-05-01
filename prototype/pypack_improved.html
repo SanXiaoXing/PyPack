@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyPack - Python打包命令生成器</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --background: #f5f6fa;
+            --card-bg: #ffffff;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--background);
+            color: var(--primary-color);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            overflow: hidden;
+        }
+
+        header {
+            background: var(--primary-color);
+            color: white;
+            padding: 1.5rem 2rem;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        header p {
+            margin-top: 0.5rem;
+            opacity: 0.8;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f1f2f6;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            text-align: center;
+            flex: 1;
+        }
+
+        .tab:hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        .tab.active {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 2rem;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .config-section {
+            margin-bottom: 2rem;
+        }
+
+        .config-section h3 {
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #eee;
+            color: var(--secondary-color);
+        }
+
+        .config-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .config-row {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 0 -0.5rem;
+        }
+
+        .config-col {
+            flex: 1;
+            min-width: 250px;
+            padding: 0 0.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+        }
+
+        .checkbox-label input {
+            margin-right: 0.5rem;
+            width: auto;
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        input[type="text"]:focus, select:focus {
+            border-color: var(--secondary-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .command-section {
+            margin-top: 2rem;
+        }
+
+        .command-box {
+            background: #f8f9fa;
+            padding: 1.2rem;
+            border-radius: 6px;
+            position: relative;
+            border: 1px solid #eee;
+            overflow-x: auto;
+        }
+
+        .command-box code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #333;
+        }
+
+        .copy-btn {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            padding: 0.4rem 0.8rem;
+            background: var(--secondary-color);
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.8rem;
+        }
+
+        .copy-btn:hover {
+            background: #2980b9;
+        }
+
+        .copy-btn:active {
+            transform: translateY(1px);
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            top: -30px;
+            right: 0;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            background: #f1f2f6;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .tab {
+                padding: 0.8rem 1rem;
+                font-size: 0.9rem;
+            }
+            
+            .tab-content {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PyPack</h1>
+            <p>轻松生成 Nuitka 和 PyInstaller 打包命令</p>
+        </header>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('nuitka')">Nuitka</div>
+            <div class="tab" onclick="switchTab('pyinstaller')">PyInstaller</div>
+        </div>
+
+        <!-- Nuitka Tab -->
+        <div id="nuitka" class="tab-content active">
+            <div class="config-section">
+                <h3>基本设置</h3>
+                <div class="config-row">
+                    <div class="config-col">
+                        <label>目标操作系统</label>
+                        <select id="n-target-os" onchange="generateNuitkaCommand()">
+                            <option value="windows" selected>Windows</option>
+                            <option value="macos">macOS</option>
+                            <option value="linux">Linux</option> <!-- 可选，如果需要支持 Linux -->
+                        </select>
+                    </div>
+                    <div class="config-col">
+                        <label>主程序路径</label>
+                        <input type="text" id="n-main-file" placeholder="例如: main.py" oninput="generateNuitkaCommand()">
+                    </div>
+                </div>
+                <div class="config-row">
+                    <div class="config-col">
+                        <label>输出目录</label>
+                        <input type="text" id="n-output-dir" placeholder="例如: dist" oninput="generateNuitkaCommand()">
+                    </div>
+                    <div class="config-col">
+                        <label>应用名称</label>
+                        <input type="text" id="n-app-name" placeholder="例如: MyApp" oninput="generateNuitkaCommand()">
+                    </div>
+                 </div>
+                 <div class="config-row">
+                    <div class="config-col">
+                        <label>图标文件</label>
+                        <input type="text" id="n-icon" placeholder="例如: icon.ico / icon.icns" oninput="generateNuitkaCommand()">
+                    </div>
+                    <div class="config-col">
+                        <!-- 保留此列为空或添加其他选项 -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h3>打包选项</h3>
+                <div class="config-group">
+                    <div class="checkbox-label">
+                        <input type="checkbox" id="n-standalone" checked onchange="generateNuitkaCommand()">
+                        <span>独立模式 (--standalone)</span>
+                    </div>
+                    <div class="checkbox-label">
+                        <input type="checkbox" id="n-onefile" checked onchange="generateNuitkaCommand()">
+                        <span>单文件模式 (--onefile)</span>
+                    </div>
+                    <div class="checkbox-label">
+                        <input type="checkbox" id="n-windowed" onchange="generateNuitkaCommand()">
+                        <span>禁用控制台窗口 (--disable-console)</span>
+                    </div>
+                    <div class="checkbox-label">
+                        <input type="checkbox" id="n-follow-imports" onchange="generateNuitkaCommand()">
+                        <span>跟踪所有导入 (--follow-imports)</span>
+                    </div>
+                    <div class="checkbox-label">
+                        <input type="checkbox" id="n-include-plugins-for-qt" onchange="generateNuitkaCommand()">
+                        <span>包含Qt插件 (--include-plugins-for-qt)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h3>高级选项</h3>
+                <div class="config-row">
+                    <div class="config-col">
+                        <label>包含模块</label>
+                        <input type="text" id="n-include-module" placeholder="例如: module1,module2" oninput="generateNuitkaCommand()">
+                    </div>
+                    <div class="config-col">
+                        <label>包含包</label>
+                        <input type="text" id="n-include-package" placeholder="例如: package1,package2" oninput="generateNuitkaCommand()">
+                    </div>
+                </div>
+                <div class="config-row">
+                    <div class="config-col">
+                        <label>包含数据文件</label>
+                        <input type="text" id="n-include-data-files" placeholder="例如: data:data" oninput="generateNuitkaCommand()">
+                    </div>
+                    <div class="config-col">
+                        <label>额外选项</label>
+                        <input type="text" id="n-extra-options" placeholder="其他Nuitka选项" oninput="generateNuitkaCommand()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="command-section">
+                <h3>生成的命令</h3>
+                <div class="command-box">
+                    <code id="nuitka-command">nuitka --standalone --onefile main.py</code>
+                    <button class="copy-btn" onclick="copyCommand('nuitka-command')">
+                        复制
+                        <span class="tooltip">已复制!</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PyInstaller Tab -->
+        <div id="pyinstaller" class="tab-content">
+            <div class="config-section">
+                <h3>基本设置</h3>
+                <div class="config-row">
+                    <div class="config-col">
+                        <label>主程序路径</label>
+                        <input type="text" id="p-main-file" placeholder="例如: main.py" oninput="generatePyinstallerCommand()">
+                    </div>
+                    <div class="config-col">
+                        <label>输出目录</label>
+                        <input type="text" id="p-output-dir" placeholder="例如: dist" oninput="generatePyinstallerCommand()">
+                    </div>
+                </div>
+                <div class="config-row">
+                    <div class="config-col">
+                        <label>应用名称</label>
+                        <input type="text" id="p-app-name" placeholder="例如: MyApp" oninput="generatePyinstallerCommand()">
+                    </div>
+                    <div class="config-col">
+                        <label>图标文件</label>
+                        <input type="text" id="p-icon" placeholder="例如: icon.ico" oninput="generatePyinstallerCommand()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h3>打包选项</h3>
+                <div class="config-group">
+                    <div class="checkbox-label">
+                        <input type="checkbox" id="p-onefile" checked onchange="generatePyinstallerCommand()">
+                        <span>单文件模式 (--onefile)</span>
+                    </div>
+                    <div class="checkbox-label">
+                        <input type="checkbox" id="p-windowed" onchange="generatePyinstallerCommand()">
+                        <span>禁用控制台窗口 (--windowed)</span>
+                    </div>
+                    <div class="checkbox-label">
+                        <input type="checkbox" id="p-clean" checked onchange="generatePyinstallerCommand()">
+                        <span>清理临时文件 (--clean)</span>
+                    </div>
+                    <div class="checkbox-label">
+                        <input type="checkbox" id="p-noupx" onchange="generatePyinstallerCommand()">
+                        <span>禁用UPX压缩 (--noupx)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h3>高级选项</h3>
+                <div class="config-row">
+                    <div class="config-col">
+                        <label>隐藏导入</label>
+                        <input type="text" id="p-hidden-import" placeholder="例如: module1,module2" oninput="generatePyinstallerCommand()">
+                    </div>
+                    <div class="config-col">
+                        <label>添加数据</label>
+                        <input type="text" id="p-add-data" placeholder="例如: src;dest" oninput="generatePyinstallerCommand()">
+                    </div>
+                </div>
+                <div class="config-row">
+                    <div class="config-col">
+                        <label>添加二进制文件</label>
+                        <input type="text" id="p-add-binary" placeholder="例如: src;dest" oninput="generatePyinstallerCommand()">
+                    </div>
+                    <div class="config-col">
+                        <label>额外选项</label>
+                        <input type="text" id="p-extra-options" placeholder="其他PyInstaller选项" oninput="generatePyinstallerCommand()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="command-section">
+                <h3>生成的命令</h3>
+                <div class="command-box">
+                    <code id="pyinstaller-command">pyinstaller --onefile --clean main.py</code>
+                    <button class="copy-btn" onclick="copyCommand('pyinstaller-command')">
+                        复制
+                        <span class="tooltip">已复制!</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>PyPack - 离线Python打包命令生成工具 | 版本 V1.0.0</p>
+        </footer>
+    </div>
+
+    <script>
+        // 切换标签页
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        // 生成Nuitka命令
+        function generateNuitkaCommand() {
+            const targetOS = document.getElementById('n-target-os').value; // 获取选择的操作系统
+            const mainFile = document.getElementById('n-main-file').value || 'main.py';
+            const outputDir = document.getElementById('n-output-dir').value;
+            const appName = document.getElementById('n-app-name').value;
+            const icon = document.getElementById('n-icon').value;
+            const standalone = document.getElementById('n-standalone').checked;
+            const onefile = document.getElementById('n-onefile').checked;
+            const windowed = document.getElementById('n-windowed').checked;
+            const followImports = document.getElementById('n-follow-imports').checked;
+            const includePluginsForQt = document.getElementById('n-include-plugins-for-qt').checked;
+            const includeModule = document.getElementById('n-include-module').value;
+            const includePackage = document.getElementById('n-include-package').value;
+            const includeDataFiles = document.getElementById('n-include-data-files').value;
+            const extraOptions = document.getElementById('n-extra-options').value;
+
+            let command = 'nuitka';
+            if (standalone) command += ' --standalone';
+            if (onefile) command += ' --onefile';
+            
+            // 根据操作系统调整窗口/控制台选项
+            if (windowed) {
+                if (targetOS === 'windows') {
+                    command += ' --windows-disable-console'; // Nuitka 1.0+ 推荐
+                } else if (targetOS === 'macos') {
+                    command += ' --macos-create-app-bundle'; // macOS 需要创建 app bundle 来隐藏终端
+                } else {
+                     command += ' --disable-console'; // 通用或 Linux
+                }
+            }
+
+            if (followImports) command += ' --follow-imports';
+            if (includePluginsForQt) command += ' --enable-plugin=qt-plugins'; // Nuitka 1.0+ 推荐
+            
+            if (outputDir) command += ` --output-dir="${outputDir}"`;
+            // Nuitka 中 --output-filename 主要用于非独立模式或非 onefile 模式下的可执行文件名
+            // 对于 onefile 或 standalone，通常会自动使用脚本名或通过 --macos-app-name 设置
+            if (appName) {
+                 if (targetOS === 'macos' && standalone) { // macOS app bundle 名称
+                     command += ` --macos-app-name="${appName}"`;
+                 } else if (!standalone && !onefile) { // 仅在非独立/非单文件时设置输出文件名
+                     command += ` --output-filename="${appName}"`;
+                 }
+            }
+            
+            // 根据操作系统添加图标选项
+            if (icon) {
+                if (targetOS === 'windows') {
+                    command += ` --windows-icon-from-ico="${icon}"`;
+                } else if (targetOS === 'macos') {
+                    command += ` --macos-app-icon="${icon}"`;
+                }
+                // Linux 通常不需要特定选项，图标由 .desktop 文件处理
+            }
+            
+            if (includeModule) {
+                const modules = includeModule.split(',');
+                modules.forEach(module => {
+                    if (module.trim()) command += ` --include-module="${module.trim()}"`;
+                });
+            }
+            
+            if (includePackage) {
+                const packages = includePackage.split(',');
+                packages.forEach(pkg => {
+                    if (pkg.trim()) command += ` --include-package="${pkg.trim()}"`;
+                });
+            }
+            
+            if (includeDataFiles) {
+                const dataFiles = includeDataFiles.split(',');
+                dataFiles.forEach(dataFile => {
+                    // Nuitka 的 --include-data-files 格式通常是 src=dest
+                    if (dataFile.trim()) command += ` --include-data-files="${dataFile.trim()}"`;
+                });
+            }
+            
+            if (extraOptions) command += ` ${extraOptions}`;
+            
+            command += ` "${mainFile}"`;
+
+            document.getElementById('nuitka-command').textContent = command;
+        }
+
+        // 生成PyInstaller命令
+        function generatePyinstallerCommand() {
+            const mainFile = document.getElementById('p-main-file').value || 'main.py';
+            const outputDir = document.getElementById('p-output-dir').value;
+            const appName = document.getElementById('p-app-name').value;
+            const icon = document.getElementById('p-icon').value;
+            const onefile = document.getElementById('p-onefile').checked;
+            const windowed = document.getElementById('p-windowed').checked;
+            const clean = document.getElementById('p-clean').checked;
+            const noupx = document.getElementById('p-noupx').checked;
+            const hiddenImport = document.getElementById('p-hidden-import').value;
+            const addData = document.getElementById('p-add-data').value;
+            const addBinary = document.getElementById('p-add-binary').value;
+            const extraOptions = document.getElementById('p-extra-options').value;
+
+            let command = 'pyinstaller';
+            if (onefile) command += ' --onefile';
+            if (windowed) command += ' --windowed';
+            if (clean) command += ' --clean';
+            if (noupx) command += ' --noupx';
+            
+            if (outputDir) command += ` --distpath="${outputDir}"`;
+            if (appName) command += ` --name="${appName}"`;
+            if (icon) command += ` --icon="${icon}"`;
+            
+            if (hiddenImport) {
+                const imports = hiddenImport.split(',');
+                imports.forEach(imp => {
+                    if (imp.trim()) command += ` --hidden-import="${imp.trim()}"`;
+                });
+            }
+            
+            if (addData) {
+                const dataItems = addData.split(',');
+                dataItems.forEach(item => {
+                    if (item.trim()) command += ` --add-data="${item.trim()}"`;
+                });
+            }
+            
+            if (addBinary) {
+                const binaryItems = addBinary.split(',');
+                binaryItems.forEach(item => {
+                    if (item.trim()) command += ` --add-binary="${item.trim()}"`;
+                });
+            }
+            
+            if (extraOptions) command += ` ${extraOptions}`;
+            
+            command += ` "${mainFile}"`;
+
+            document.getElementById('pyinstaller-command').textContent = command;
+        }
+
+        // 复制命令
+        function copyCommand(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            const button = event.currentTarget;
+            // const tooltip = button.querySelector('.tooltip'); // 如果不用 tooltip 可以注释掉
+        
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = button.childNodes[0].nodeValue.trim(); // 保存原始文字 "复制"
+                
+                // 添加 success 类并修改文字
+                button.classList.add('success');
+                button.childNodes[0].nodeValue = '复制成功 ! '; // 添加感叹号和空格
+        
+                // 1.5秒后恢复按钮状态
+                setTimeout(() => {
+                    button.classList.remove('success'); // 移除 success 类
+                    button.childNodes[0].nodeValue = originalText + ' '; // 恢复原始文字
+                }, 1500);
+            }).catch(err => {
+                console.error('无法复制文本: ', err);
+                alert('复制失败，请手动复制。');
+            });
+        }
+
+        // 初始化时生成命令
+        generateNuitkaCommand();
+        generatePyinstallerCommand();
+    </script>
+</body>
+</html>
