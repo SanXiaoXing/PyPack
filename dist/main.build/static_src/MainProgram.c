@@ -1,1 +1,0 @@
-/Volumes/SanXiaoXing/Anaconda/anaconda3/envs/yx310/lib/python3.10/site-packages/nuitka/build/static_src/MainProgram.c

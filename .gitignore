@@ -1,1 +1,15 @@
-/dist
+dist/
+build/
+*.egg-info/
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+venv/
+env/
+ENV/
+
+.idea/
+.vscode/
+.DS_Store/

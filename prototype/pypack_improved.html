@@ -337,12 +337,13 @@
             <div class="command-section">
                 <h3>生成的命令</h3>
                 <div class="command-box">
-                    <code id="nuitka-command">nuitka --standalone --onefile main.py</code>
+                    <code id="nuitka-command">python -m nuitka --standalone --onefile main.py</code>
                     <button class="copy-btn" onclick="copyCommand('nuitka-command')">
                         复制
                         <span class="tooltip">已复制!</span>
                     </button>
                 </div>
+                <p class="info-text">提示：此命令使用 Nuitka 官方推荐的参数格式，可在命令行中直接运行。</p>
             </div>
         </div>
 
@@ -427,6 +428,7 @@
                         <span class="tooltip">已复制!</span>
                     </button>
                 </div>
+                <p class="info-text">提示：此命令使用 PyInstaller 标准格式，可在命令行中直接运行。</p>
             </div>
         </div>
 
@@ -450,7 +452,7 @@
 
         // 生成Nuitka命令
         function generateNuitkaCommand() {
-            const targetOS = document.getElementById('n-target-os').value; // 获取选择的操作系统
+            const targetOS = document.getElementById('n-target-os').value;
             const mainFile = document.getElementById('n-main-file').value || 'main.py';
             const outputDir = document.getElementById('n-output-dir').value;
             const appName = document.getElementById('n-app-name').value;
@@ -464,46 +466,61 @@
             const includePackage = document.getElementById('n-include-package').value;
             const includeDataFiles = document.getElementById('n-include-data-files').value;
             const extraOptions = document.getElementById('n-extra-options').value;
-
-            let command = 'nuitka';
+        
+            let command = 'python -m nuitka';
+            
+            // 基本选项
             if (standalone) command += ' --standalone';
             if (onefile) command += ' --onefile';
             
             // 根据操作系统调整窗口/控制台选项
             if (windowed) {
                 if (targetOS === 'windows') {
-                    command += ' --windows-disable-console'; // Nuitka 1.0+ 推荐
+                    command += ' --windows-disable-console';
                 } else if (targetOS === 'macos') {
-                    command += ' --macos-create-app-bundle'; // macOS 需要创建 app bundle 来隐藏终端
+                    command += ' --macos-disable-console';
                 } else {
-                     command += ' --disable-console'; // 通用或 Linux
+                    command += ' --linux-disable-console'; // Linux 选项
                 }
             }
-
-            if (followImports) command += ' --follow-imports';
-            if (includePluginsForQt) command += ' --enable-plugin=qt-plugins'; // Nuitka 1.0+ 推荐
             
+            // 针对 macOS 的特殊处理
+            if (targetOS === 'macos' && standalone) {
+                command += ' --macos-create-app-bundle';
+            }
+        
+            // 导入处理
+            if (followImports) command += ' --follow-imports';
+            
+            // 插件处理
+            if (includePluginsForQt) command += ' --enable-plugin=qt-plugins';
+            
+            // 输出目录
             if (outputDir) command += ` --output-dir="${outputDir}"`;
-            // Nuitka 中 --output-filename 主要用于非独立模式或非 onefile 模式下的可执行文件名
-            // 对于 onefile 或 standalone，通常会自动使用脚本名或通过 --macos-app-name 设置
+            
+            // 应用名称处理
             if (appName) {
-                 if (targetOS === 'macos' && standalone) { // macOS app bundle 名称
-                     command += ` --macos-app-name="${appName}"`;
-                 } else if (!standalone && !onefile) { // 仅在非独立/非单文件时设置输出文件名
-                     command += ` --output-filename="${appName}"`;
-                 }
+                if (targetOS === 'macos') {
+                    command += ` --macos-app-name="${appName}"`;
+                } else if (targetOS === 'windows') {
+                    command += ` --windows-product-name="${appName}" --windows-company-name="${appName}"`;
+                } else if (!standalone && !onefile) {
+                    command += ` --output-filename="${appName}"`;
+                }
             }
             
-            // 根据操作系统添加图标选项
+            // 图标处理
             if (icon) {
                 if (targetOS === 'windows') {
                     command += ` --windows-icon-from-ico="${icon}"`;
                 } else if (targetOS === 'macos') {
                     command += ` --macos-app-icon="${icon}"`;
+                } else if (targetOS === 'linux') {
+                    command += ` --linux-icon="${icon}"`;
                 }
-                // Linux 通常不需要特定选项，图标由 .desktop 文件处理
             }
             
+            // 模块和包处理
             if (includeModule) {
                 const modules = includeModule.split(',');
                 modules.forEach(module => {
@@ -518,18 +535,20 @@
                 });
             }
             
+            // 数据文件处理
             if (includeDataFiles) {
                 const dataFiles = includeDataFiles.split(',');
                 dataFiles.forEach(dataFile => {
-                    // Nuitka 的 --include-data-files 格式通常是 src=dest
                     if (dataFile.trim()) command += ` --include-data-files="${dataFile.trim()}"`;
                 });
             }
             
+            // 额外选项
             if (extraOptions) command += ` ${extraOptions}`;
             
+            // 主文件
             command += ` "${mainFile}"`;
-
+        
             document.getElementById('nuitka-command').textContent = command;
         }
 
@@ -549,15 +568,27 @@
             const extraOptions = document.getElementById('p-extra-options').value;
 
             let command = 'pyinstaller';
+            
+            // 基本选项
             if (onefile) command += ' --onefile';
+            else command += ' --onedir';
+            
             if (windowed) command += ' --windowed';
+            else command += ' --console';
+            
             if (clean) command += ' --clean';
             if (noupx) command += ' --noupx';
             
+            // 输出目录
             if (outputDir) command += ` --distpath="${outputDir}"`;
+            
+            // 应用名称
             if (appName) command += ` --name="${appName}"`;
+            
+            // 图标
             if (icon) command += ` --icon="${icon}"`;
             
+            // 隐藏导入
             if (hiddenImport) {
                 const imports = hiddenImport.split(',');
                 imports.forEach(imp => {
@@ -565,6 +596,7 @@
                 });
             }
             
+            // 添加数据
             if (addData) {
                 const dataItems = addData.split(',');
                 dataItems.forEach(item => {
@@ -572,6 +604,7 @@
                 });
             }
             
+            // 添加二进制文件
             if (addBinary) {
                 const binaryItems = addBinary.split(',');
                 binaryItems.forEach(item => {
@@ -579,8 +612,10 @@
                 });
             }
             
+            // 额外选项
             if (extraOptions) command += ` ${extraOptions}`;
             
+            // 主文件
             command += ` "${mainFile}"`;
 
             document.getElementById('pyinstaller-command').textContent = command;
@@ -589,20 +624,21 @@
         // 复制命令
         function copyCommand(elementId) {
             const text = document.getElementById(elementId).textContent;
-            const button = event.currentTarget;
-            // const tooltip = button.querySelector('.tooltip'); // 如果不用 tooltip 可以注释掉
-        
+            const button = document.querySelector(`#${elementId}`).nextElementSibling;
+            const tooltip = button.querySelector('.tooltip');
+            const originalText = button.childNodes[0].nodeValue.trim();
+            
             navigator.clipboard.writeText(text).then(() => {
-                const originalText = button.childNodes[0].nodeValue.trim(); // 保存原始文字 "复制"
-                
-                // 添加 success 类并修改文字
+                // 显示成功提示
+                tooltip.classList.add('show');
                 button.classList.add('success');
-                button.childNodes[0].nodeValue = '复制成功 ! '; // 添加感叹号和空格
-        
-                // 1.5秒后恢复按钮状态
+                button.childNodes[0].nodeValue = '已复制 ';
+                
+                // 2秒后恢复原状
                 setTimeout(() => {
-                    button.classList.remove('success'); // 移除 success 类
-                    button.childNodes[0].nodeValue = originalText + ' '; // 恢复原始文字
+                    tooltip.classList.remove('show');
+                    button.classList.remove('success');
+                    button.childNodes[0].nodeValue = originalText + ' ';
                 }, 1500);
             }).catch(err => {
                 console.error('无法复制文本: ', err);
@@ -616,3 +652,47 @@
     </script>
 </body>
 </html>
+
+<style>
+    /* 复制按钮成功状态 */
+    .copy-btn.success {
+        background-color: #27ae60;
+    }
+    
+    /* 命令框增强 */
+    .command-box {
+        background: #f8f9fa;
+        padding: 1.2rem;
+        border-radius: 6px;
+        position: relative;
+        border: 1px solid #eee;
+        overflow-x: auto;
+        margin-top: 1rem;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    /* 提示信息增强 */
+    .info-text {
+        font-size: 0.85rem;
+        color: #7f8c8d;
+        margin-top: 0.5rem;
+        font-style: italic;
+    }
+    
+    /* 响应式优化 */
+    @media (max-width: 768px) {
+        .config-col {
+            min-width: 100%;
+            margin-bottom: 0.5rem;
+        }
+        
+        .command-box {
+            padding: 1rem 0.8rem;
+        }
+        
+        .copy-btn {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.75rem;
+        }
+    }
+</style>
